@@ -17,8 +17,8 @@ with open('config.json') as config:
     config = json.load(config)
         
     prefix = config.get('prefix')
+    master = config.get('master')
 
-master = [] # Your ID here
 tokens = []
 with open('tokens.txt'.strip()) as f:
     for line in f:
@@ -32,7 +32,7 @@ for token in tokens:
 
     @bot.event
     async def on_message(message):
-        if message.author.id not in master and (f'{prefix}') in message.content:
+        if message.author.id != master and (f'{prefix}') in message.content:
             await message.channel.send(f'<@{message.author.id}> you are not an authorized user.')
             return
 
@@ -73,8 +73,27 @@ for token in tokens:
         if message.content.startswith(f'{prefix}stop_spam'):
             spam = False
 
+        if message.content.startswith(f'{prefix}connect'):
+            channel_id = message.content.split(" ")[1]
+            channel = bot.get_channel(int(channel_id))
+            if channel is None:
+                print(f'Channel not found')
+
+            else:
+                voice_client = channel.guild.voice_client
+                if voice_client:
+                    await voice_client.disconnect()
+                await channel.connect()
+                print('Connecting')
+
+        if message.content.startswith(f'{prefix}disconnect'):
+            if message.guild is None:
+                return
             
-        
+            voice_client = message.guild.voice_client
+            if voice_client:
+                await voice_client.disconnect()
+                print('Disconnecting')
 
     bots.append(bot)
 
@@ -83,6 +102,7 @@ if __name__ == '__main__':
         clear()
         print(artwork)
         print(f'{len(bots)} Drones Online')
+        
         loop = asyncio.get_event_loop()
         for i, bot in enumerate(bots):
             loop.create_task(bot.start(tokens[i]))
